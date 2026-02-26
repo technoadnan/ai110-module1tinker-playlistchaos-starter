@@ -1,0 +1,21 @@
+Feature,Correct Behavior
+Hype Mood,"Energy ≥ 7, OR matches favorite genre, OR genre has ""rock/punk/party""."
+Chill Mood,"Energy ≤ 3, OR title has ""lofi/ambient/sleep""."
+Mixed Mood,"Any song that does not fit ""Hype"" or ""Chill""."
+Search,"Must be case-insensitive and allow partial matches (e.g., ""ice"" finds ""Vanilla Ice"")."
+Statistics,Must calculate unique song counts and proper mathematical averages for energy.
+Lucky Pick,Must pull a random song only from the category the user selected.
+Data Cleanup,Must trim whitespace and use consistent casing (lowercase) for comparisons.
+
+  
+
+
+fixed
+2. update song is not working 
+
+# ----------
+
+1. song adding is not working 
+3. artist name 
+4. clear history is not working 
+5. after reloading the song is disappear 

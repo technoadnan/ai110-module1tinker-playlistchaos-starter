@@ -74,7 +74,7 @@ For each fix:
 - Decide whether to accept or adjust the AI assistant's suggestions  
 - Update the code  
 - Add a short comment describing the fix  
-
+ 
 Your fixes may involve logic, calculations, search behavior, playlist grouping, lucky pick behavior, or anything else you discover.
 
 ### 4. Test your changes  
