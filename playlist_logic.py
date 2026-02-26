@@ -72,8 +72,7 @@ def classify_song(song: Song, profile: Dict[str, object]) -> str:
     chill_keywords = ["lofi", "lo-fi", "ambient", "sleep"]
 
     is_hype_keyword = any(k in genre for k in hype_keywords)
-    # FIX: lowercase title before matching so "Lofi Rain" correctly triggers chill
-    is_chill_keyword = any(k in title.lower() for k in chill_keywords)
+    is_chill_keyword = any(k in genre for k in chill_keywords) or any(k in title.lower() for k in chill_keywords)
 
     if genre == favorite_genre or energy >= hype_min_energy or is_hype_keyword:
         return "Hype"
