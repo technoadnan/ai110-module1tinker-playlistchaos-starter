@@ -1,3 +1,6 @@
+import json
+import os
+
 import streamlit as st
 
 from playlist_logic import (
@@ -13,10 +16,29 @@ from playlist_logic import (
 )
 
 
+# Path to the JSON file used to persist songs across page reloads
+SONGS_FILE = os.path.join(os.path.dirname(__file__), "songs.json")
+
+
+def save_songs(songs):
+    """Persist the current song list to disk so it survives page reloads."""
+    with open(SONGS_FILE, "w") as f:
+        json.dump(songs, f, indent=2)
+
+
+def load_songs():
+    """Load songs from disk; fall back to defaults if the file doesn't exist yet."""
+    if os.path.exists(SONGS_FILE):
+        with open(SONGS_FILE) as f:
+            return json.load(f)
+    return default_songs()
+
+
 def init_state():
     """Initialize Streamlit session state."""
     if "songs" not in st.session_state:
-        st.session_state.songs = default_songs()
+        # FIX: load from disk so user-added songs survive a page reload
+        st.session_state.songs = load_songs()
     if "profile" not in st.session_state:
         st.session_state.profile = dict(DEFAULT_PROFILE)
     if "history" not in st.session_state:
@@ -210,10 +232,15 @@ def profile_sidebar():
             value=int(profile.get("chill_max_energy", 3)),
         )
 
+    _genre_options = ["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"]
+    _current_genre = str(profile.get("favorite_genre", "rock"))
+    # FIX: derive the index from the saved profile value so the selectbox
+    # reflects what the user previously chose instead of always defaulting to "rock"
+    _genre_index = _genre_options.index(_current_genre) if _current_genre in _genre_options else 0
     profile["favorite_genre"] = st.sidebar.selectbox(
         "Favorite genre",
-        options=["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"],
-        index=0,
+        options=_genre_options,
+        index=_genre_index,
     )
 
     profile["include_mixed"] = st.sidebar.checkbox(
@@ -253,6 +280,65 @@ def add_song_sidebar():
             all_songs = st.session_state.songs[:]
             all_songs.append(normalized)
             st.session_state.songs = all_songs
+            save_songs(all_songs)  # persist so the song survives a reload
+            st.sidebar.success(f'Added "{title}" to the playlist!')
+        else:
+            st.sidebar.warning("Please enter both a title and an artist.")
+
+
+def update_song_sidebar():
+    """Render the Update Song controls in the sidebar."""
+    st.sidebar.header("Update a song")
+
+    songs = st.session_state.songs
+    if not songs:
+        st.sidebar.write("No songs to update.")
+        return
+
+    titles = [s["title"] for s in songs]
+    selected_title = st.sidebar.selectbox("Select song to edit", options=titles, key="update_select")
+
+    idx = next((i for i, s in enumerate(songs) if s["title"] == selected_title), None)
+    if idx is None:
+        return
+
+    current = songs[idx]
+    new_title = st.sidebar.text_input("New title", value=current["title"], key="update_title")
+    new_artist = st.sidebar.text_input("New artist", value=current["artist"], key="update_artist")
+    new_genre = st.sidebar.selectbox(
+        "New genre",
+        options=["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"],
+        index=["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"].index(
+            current["genre"] if current["genre"] in ["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"] else "other"
+        ),
+        key="update_genre",
+    )
+    new_energy = st.sidebar.slider(
+        "New energy", min_value=1, max_value=10, value=int(current["energy"]), key="update_energy"
+    )
+    new_tags_text = st.sidebar.text_input(
+        "New tags (comma separated)", value=", ".join(current.get("tags", [])), key="update_tags"
+    )
+
+    if st.sidebar.button("Update song"):
+        if new_title and new_artist:
+            raw_tags = [t.strip() for t in new_tags_text.split(",")]
+            new_tags = [t for t in raw_tags if t]
+            updated: Song = {
+                "title": new_title,
+                "artist": new_artist,
+                "genre": new_genre,
+                "energy": new_energy,
+                "tags": new_tags,
+            }
+            normalized = normalize_song(updated)
+            all_songs = st.session_state.songs[:]
+            all_songs[idx] = normalized
+            st.session_state.songs = all_songs
+            save_songs(all_songs)  # persist so the edit survives a reload
+            st.sidebar.success(f'Updated "{new_title}" successfully!')
+        else:
+            st.sidebar.warning("Title and artist cannot be empty.")
 
 
 def playlist_tabs(playlists):
@@ -369,9 +455,13 @@ def clear_controls():
     """Render a small section for clearing data."""
     st.sidebar.header("Manage data")
     if st.sidebar.button("Reset songs to default"):
-        st.session_state.songs = default_songs()
+        defaults = default_songs()
+        st.session_state.songs = defaults
+        save_songs(defaults)  # overwrite persisted file with the defaults
+        st.rerun()
     if st.sidebar.button("Clear history"):
         st.session_state.history = []
+        st.rerun()
 
 
 def main():
@@ -386,6 +476,7 @@ def main():
     init_state()
     profile_sidebar()
     add_song_sidebar()
+    update_song_sidebar()
     clear_controls()
 
     profile = st.session_state.profile
