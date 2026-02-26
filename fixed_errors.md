@@ -46,4 +46,4 @@
 
 - Favorite genre — always reset to rock on every render
     - Before: selectbox(index=0) hardcoded, ignored the saved profile value
-    - After: derives the index from the current profile so it reflects the user's choice
+    - After: derives the index from the current profile so it reflects the user's choice 

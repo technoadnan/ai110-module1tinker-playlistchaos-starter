@@ -208,9 +208,9 @@ def default_songs():
 def profile_sidebar():
     """Render and update the user profile."""
     st.sidebar.header("Mood profile")
-
+ 
     profile = st.session_state.profile
-
+ 
     profile["name"] = st.sidebar.text_input(
         "Profile name",
         value=str(profile.get("name", "")),
